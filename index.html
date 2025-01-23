@@ -205,6 +205,87 @@
             width: 100%;
             margin: 10px 0;
         }
+
+        #settings-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .setting-item {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 120px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-switch label {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #4CAF50;
+            transition: .4s;
+            border-radius: 34px;
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-switch label:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + label {
+            background-color: #2196F3;
+        }
+
+        .toggle-switch input:checked + label:before {
+            transform: translateX(85px);
+        }
+
+        .toggle-label {
+            color: white;
+            font-size: 12px;
+            z-index: 1;
+        }
+
+        .settings-select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background: white;
+            width: 120px;
+            font-size: 14px;
+        }
+
+        .settings-select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
     </style>
 </head>
 <body>
@@ -240,6 +321,27 @@
                     <button class="menu-button" id="apply-modifier">确认修改</button>
                     <div class="modifier-status">修改待确认</div>
                 </div>
+            </div>
+            <div id="settings-panel" style="display: none;">
+                <h3>玩家设置</h3>
+                <div class="setting-item">
+                    <label>攻击模式：</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="attack-mode-toggle" checked>
+                        <label for="attack-mode-toggle">
+                            <span class="toggle-label">自动攻击</span>
+                            <span class="toggle-label">手动攻击</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <label>语言：</label>
+                    <select id="language-select" class="settings-select">
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+                <button class="menu-button" id="settings-back">返回</button>
             </div>
         </div>
     </div>

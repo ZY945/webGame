@@ -76,6 +76,80 @@ const REWARDS = [
     }
 ];
 
+// 添加语言配置
+const LANGUAGES = {
+    zh: {
+        menuTitle: "玩家设置",
+        attackMode: "攻击模式：",
+        autoAttack: "自动攻击",
+        manualAttack: "手动攻击",
+        language: "语言：",
+        back: "返回",
+        continue: "继续游戏",
+        restart: "重新开始",
+        scores: "历史战绩",
+        settings: "玩家设置",
+        exit: "退出游戏",
+        gameOver: "游戏结束！",
+        victory: "恭喜通关！",
+        noScores: "暂无战绩",
+        modifierTitle: "修改器",
+        attackPower: "攻击力:",
+        attackInterval: "攻击间隔(ms):",
+        maxHealth: "最大生命值:",
+        applyModifier: "确认修改",
+        modifierPending: "修改待确认",
+        modifierApplied: "修改已生效",
+        level: "关卡",
+        time: "时间",
+        score: "分数",
+        health: "生命",
+        exitConfirm: "确定要退出游戏吗？",
+        menuButton: "菜单",
+        gamePaused: "游戏暂停中",
+        completed: "(已通关)",
+        scoreFormat: "${index}. 分数: ${score} - 关卡: ${level}${completed} - ${date}",
+        rewardTitle: "选择一张奖励卡片",
+        victory: "恭喜通关！"  // 添加胜利文本
+    },
+    en: {
+        menuTitle: "Player Settings",
+        attackMode: "Attack Mode:",
+        autoAttack: "Auto Attack",
+        manualAttack: "Manual Attack",
+        language: "Language:",
+        back: "Back",
+        continue: "Continue",
+        restart: "Restart",
+        scores: "High Scores",
+        settings: "Settings",
+        exit: "Exit",
+        gameOver: "Game Over!",
+        victory: "Victory!",
+        noScores: "No scores yet",
+        modifierTitle: "Modifier",
+        attackPower: "Attack Power:",
+        attackInterval: "Attack Interval(ms):",
+        maxHealth: "Max Health:",
+        applyModifier: "Apply",
+        modifierPending: "Pending",
+        modifierApplied: "Applied",
+        level: "Level",
+        time: "Time",
+        score: "Score",
+        health: "Health",
+        exitConfirm: "Are you sure you want to exit?",
+        menuButton: "Menu",
+        gamePaused: "Game Paused",
+        completed: "(Completed)",
+        scoreFormat: "${index}. Score: ${score} - Level: ${level}${completed} - ${date}",
+        rewardTitle: "Choose a Reward Card"
+    }
+};
+
+// 当前语言
+let currentLanguage = 'zh';
+
 // 创建应用
 const app = new PIXI.Application({
     width: window.innerWidth,
@@ -263,6 +337,51 @@ const modifierStatus = document.querySelector('.modifier-status');
 // 添加确认按钮元素
 const applyModifierButton = document.getElementById('apply-modifier');
 
+// 添加攻击模式变量
+let isAutoAttack = true;
+
+// 添加鼠标位置追踪
+let mouseX = 0;
+let mouseY = 0;
+
+// 监听鼠标移动
+app.view.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+});
+
+// 修改设置按钮点击事件
+settingsButton.addEventListener('click', () => {
+    document.querySelector('.menu-left').style.display = 'none';
+    document.querySelector('.modifier-panel').style.display = 'none';
+    document.getElementById('settings-panel').style.display = 'block';
+});
+
+// 添加返回按钮事件
+document.getElementById('settings-back').addEventListener('click', () => {
+    document.querySelector('.menu-left').style.display = 'block';
+    document.querySelector('.modifier-panel').style.display = 'block';
+    document.getElementById('settings-panel').style.display = 'none';
+});
+
+// 监听攻击模式切换
+const attackModeToggle = document.getElementById('attack-mode-toggle');
+attackModeToggle.addEventListener('change', (e) => {
+    isAutoAttack = e.target.checked;
+});
+
+// 添加语言选择监听
+const languageSelect = document.getElementById('language-select');
+languageSelect.addEventListener('change', (e) => {
+    currentLanguage = e.target.value;
+    updateLanguage();
+    updateScoresList();  // 更新战绩显示
+    // 如果奖励界面显示中，也需要更新
+    if (rewardOverlay.style.display === 'flex') {
+        document.querySelector('#reward-container h2').textContent = LANGUAGES[currentLanguage].rewardTitle;
+    }
+});
+
 // 修改应用修改器的值函数
 function applyModifiers() {
     const newAttack = Number(attackModifier.value);
@@ -299,31 +418,36 @@ function autoShoot() {
     const now = Date.now();
     const timeSinceLastShot = now - lastPlayerShot;
     
-    // 添加调试日志
-    console.log('Shooting check:', {
-        interval: SHOOT_INTERVAL,
-        timeSince: timeSinceLastShot,
-        canShoot: timeSinceLastShot >= SHOOT_INTERVAL
-    });
-    
     if (timeSinceLastShot < SHOOT_INTERVAL) {
         return;
     }
 
-    const nearestEnemy = getNearestEnemy();
-    if (!nearestEnemy) return;
+    if (isAutoAttack) {
+        // 自动瞄准最近的敌人
+        const nearestEnemy = getNearestEnemy();
+        if (!nearestEnemy) return;
+        
+        shootBullet(nearestEnemy.x, nearestEnemy.y);
+    } else {
+        // 向鼠标方向射击
+        shootBullet(mouseX, mouseY);
+    }
+    
+    lastPlayerShot = now;
+}
 
+// 添加射击子弹函数
+function shootBullet(targetX, targetY) {
     const bullet = new Bullet(player.x, player.y, true);
     
-    const dx = nearestEnemy.x - player.x;
-    const dy = nearestEnemy.y - player.y;
+    const dx = targetX - player.x;
+    const dy = targetY - player.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
     bullet.direction.x = dx / distance;
     bullet.direction.y = dy / distance;
     
     playerBullets.addChild(bullet);
-    lastPlayerShot = now;
 }
 
 // 修改初始化修改器值函数
@@ -342,21 +466,23 @@ function initModifiers() {
 // 修改监听器逻辑
 [attackModifier, intervalModifier, healthModifier].forEach(input => {
     input.addEventListener('change', () => {
-        modifierStatus.textContent = '修改待确认';
+        const lang = LANGUAGES[currentLanguage];
+        modifierStatus.textContent = lang.modifierPending;
         modifierStatus.style.background = '#e0e0e0';
         modifierStatus.style.color = '#666';
     });
 });
 
-// 添加确认按钮事件监听
+// 修改确认按钮事件监听
 applyModifierButton.addEventListener('click', () => {
+    const lang = LANGUAGES[currentLanguage];
     applyModifiers();
-    modifierStatus.textContent = '修改已生效';
+    modifierStatus.textContent = lang.modifierApplied;
     modifierStatus.style.background = '#4CAF50';
     modifierStatus.style.color = 'white';
 });
 
-// 修改隐藏菜单函数
+// 添加隐藏菜单函数
 function hideMenu() {
     menuOverlay.style.display = 'none';
     gameOverText.style.display = 'none';
@@ -366,13 +492,26 @@ function hideMenu() {
 // 修改显示菜单函数
 function showMenu(isGameOver = false) {
     menuOverlay.style.display = 'block';
-    gameOverText.style.display = isGameOver ? 'block' : 'none';
+    
+    // 根据是否是游戏结束来显示不同文本
+    if (isGameOver) {
+        const lang = LANGUAGES[currentLanguage];
+        gameOverText.textContent = lang.gameOver;
+        gameOverText.style.color = '#ff0000';
+    } else {
+        const lang = LANGUAGES[currentLanguage];
+        gameOverText.textContent = lang.gamePaused;
+        gameOverText.style.color = '#4CAF50';
+    }
+    gameOverText.style.display = 'block';
+    
     continueButton.style.display = isGameOver ? 'none' : 'block';
     restartButton.style.display = isGameOver ? 'block' : 'none';
     
     // 初始化修改器值
     initModifiers();
-    modifierStatus.textContent = '修改待确认';
+    const lang = LANGUAGES[currentLanguage];
+    modifierStatus.textContent = lang.modifierPending;
     modifierStatus.style.background = '#e0e0e0';
     modifierStatus.style.color = '#666';
     
@@ -625,12 +764,17 @@ function checkBulletCollisions() {
 
 // 更新游戏信息显示
 function updateGameInfo() {
-    gameInfoText.text = `关卡: ${currentLevel}/${TOTAL_LEVELS}    时间: ${Math.ceil(levelTimeLeft)}    分数: ${score}    生命: ${Math.ceil(player.health)}`;
+    const lang = LANGUAGES[currentLanguage];
+    gameInfoText.text = `${lang.level}: ${currentLevel}/${TOTAL_LEVELS}    ${lang.time}: ${Math.ceil(levelTimeLeft)}    ${lang.score}: ${score}    ${lang.health}: ${Math.ceil(player.health)}`;
 }
 
 // 显示奖励选择界面
 function showRewards() {
     isPaused = true;
+    const lang = LANGUAGES[currentLanguage];
+    
+    // 更新标题
+    document.querySelector('#reward-container h2').textContent = lang.rewardTitle;
     
     // 随机选择三个不同的奖励
     const selectedRewards = getRandomRewards(3);
@@ -688,11 +832,11 @@ function continueGame() {
 // 添加游戏胜利函数
 function gameVictory() {
     isPaused = true;
-    saveScore(); // 保存战绩
+    saveScore();
     
-    // 修改游戏结束文本
+    const lang = LANGUAGES[currentLanguage];
     gameOverText.style.color = '#4CAF50';
-    gameOverText.textContent = '恭喜通关！';
+    gameOverText.textContent = lang.victory;
     showMenu(true);
 }
 
@@ -751,24 +895,29 @@ function saveScore() {
     updateScoresList();
 }
 
-// 修改战绩显示函数，添加通关标记
+// 修改战绩显示函数
 function updateScoresList() {
     scoresList.innerHTML = '';
+    const lang = LANGUAGES[currentLanguage];
     
     if (highScores.length === 0) {
-        scoresList.innerHTML = '<div class="no-scores">暂无战绩</div>';
+        scoresList.innerHTML = `<div class="no-scores">${lang.noScores}</div>`;
         return;
     }
 
-    // 按分数排序
     highScores.sort((a, b) => b.score - a.score);
     
-    // 只显示前10个最高分
     highScores.slice(0, 10).forEach((score, index) => {
         const scoreElement = document.createElement('div');
         scoreElement.className = 'score-item';
-        const completedText = score.completed ? '(已通关)' : '';
-        scoreElement.textContent = `${index + 1}. 分数: ${score.score} - 关卡: ${score.level}${completedText} - ${new Date(score.date).toLocaleString()}`;
+        const completedText = score.completed ? lang.completed : '';
+        const scoreText = lang.scoreFormat
+            .replace('${index}', index + 1)
+            .replace('${score}', score.score)
+            .replace('${level}', score.level)
+            .replace('${completed}', completedText)
+            .replace('${date}', new Date(score.date).toLocaleString());
+        scoreElement.textContent = scoreText;
         scoresList.appendChild(scoreElement);
     });
 }
@@ -786,18 +935,11 @@ restartButton.addEventListener('click', resetGame);
 // 修改继续游戏按钮逻辑
 continueButton.addEventListener('click', hideMenu);
 
-// 玩家设置
-settingsButton.addEventListener('click', () => {
-    // 这里添加设置逻辑
-    alert('设置功能开发中...');
-});
-
 // 退出游戏
 exitButton.addEventListener('click', () => {
-    if (confirm('确定要退出游戏吗？')) {
-        window.close(); // 注意：这可能不会在所有浏览器中生效
-        // 可以重定向到其他页面
-        // window.location.href = 'exit.html';
+    const lang = LANGUAGES[currentLanguage];
+    if (confirm(lang.exitConfirm)) {
+        window.close();
     }
 });
 
@@ -874,4 +1016,75 @@ function gameOver() {
     showMenu(true);
 }
 
-// 这里可以添加你的游戏逻辑 
+// 更新界面语言
+function updateLanguage() {
+    const lang = LANGUAGES[currentLanguage];
+    
+    // 更新菜单按钮
+    menuButton.textContent = lang.menuButton;
+    
+    // 更新设置面板
+    const settingsPanel = document.querySelector('#settings-panel');
+    settingsPanel.querySelector('h3').textContent = lang.menuTitle;
+    const settingItems = settingsPanel.querySelectorAll('.setting-item');
+    settingItems[0].querySelector('label').textContent = lang.attackMode;
+    settingItems[1].querySelector('label').textContent = lang.language;
+    
+    // 更新攻击模式开关
+    const toggleLabels = document.querySelectorAll('#attack-mode-toggle + label .toggle-label');
+    toggleLabels[0].textContent = lang.autoAttack;
+    toggleLabels[1].textContent = lang.manualAttack;
+    
+    // 更新返回按钮
+    document.querySelector('#settings-back').textContent = lang.back;
+    
+    // 更新主菜单按钮
+    continueButton.textContent = lang.continue;
+    restartButton.textContent = lang.restart;
+    scoresButton.textContent = lang.scores;
+    settingsButton.textContent = lang.settings;
+    exitButton.textContent = lang.exit;
+    
+    // 更新修改器面板
+    const modifierPanel = document.querySelector('.modifier-panel');
+    modifierPanel.querySelector('h3').textContent = lang.modifierTitle;
+    const modifierLabels = modifierPanel.querySelectorAll('.modifier-item label');
+    modifierLabels[0].textContent = lang.attackPower;
+    modifierLabels[1].textContent = lang.attackInterval;
+    modifierLabels[2].textContent = lang.maxHealth;
+    applyModifierButton.textContent = lang.applyModifier;
+    
+    // 更新修改器状态
+    const currentStatus = modifierStatus.textContent;
+    if (currentStatus === LANGUAGES.zh.modifierPending || currentStatus === LANGUAGES.en.modifierPending) {
+        modifierStatus.textContent = lang.modifierPending;
+    } else if (currentStatus === LANGUAGES.zh.modifierApplied || currentStatus === LANGUAGES.en.modifierApplied) {
+        modifierStatus.textContent = lang.modifierApplied;
+    }
+    
+    // 更新游戏状态文本
+    if (isPaused) {
+        if (gameOverText.style.color === 'rgb(255, 0, 0)') {  // 使用 rgb 格式检查颜色
+            gameOverText.textContent = lang.gameOver;
+        } else if (gameOverText.style.color === 'rgb(76, 175, 80)') {
+            gameOverText.textContent = lang.gamePaused;
+        }
+    }
+    
+    // 更新奖励界面
+    if (rewardOverlay.style.display === 'flex') {
+        document.querySelector('#reward-container h2').textContent = lang.rewardTitle;
+    }
+    
+    // 更新游戏信息显示
+    updateGameInfo();
+    
+    // 更新战绩显示
+    updateScoresList();
+}
+
+// 初始化语言
+updateLanguage();
+
+// 初始化时设置语言选择器的值
+languageSelect.value = currentLanguage; 
